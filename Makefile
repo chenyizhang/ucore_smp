@@ -372,7 +372,7 @@ print-%:
 
 .PHONY: clean dist-clean handin packall
 clean:
-	$(V)$(RM) $(GRADE_GDB_IN) $(GRADE_QEMU_OUT)  $(SFSBINS) bootblockother.o entryother entryother.o entryother.asm 
+	$(V)$(RM) $(GRADE_GDB_IN) $(GRADE_QEMU_OUT)  $(SFSBINS) bootblockother.o entryother entryother.o entryother.asm a.log 
 	-$(RM) -r $(OBJDIR) $(BINDIR)
 
 dist-clean: clean
