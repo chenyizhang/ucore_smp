@@ -244,6 +244,7 @@ trap_dispatch(struct trapframe *tf) {
         ticks ++;
         assert(current != NULL);
         run_timer_list();
+	lapiceoi();
         break;
     case IRQ_OFFSET + IRQ_COM1:
         //c = cons_getc();
@@ -256,6 +257,7 @@ trap_dispatch(struct trapframe *tf) {
           extern void dev_stdin_write(char c);
           dev_stdin_write(c);
         }
+	lapiceoi();
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:

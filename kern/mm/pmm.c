@@ -130,8 +130,8 @@ gdt_init(void) {
    
     struct cpu *c;  //xv6
     // set boot kernel stack and default SS0
-    //load_esp0((uintptr_t)bootstacktop);
-    //ts.ts_ss0 = KERNEL_DS;
+    load_esp0((uintptr_t)bootstacktop);
+    ts.ts_ss0 = KERNEL_DS;
 
 
     c = &cpus[cpunum()];
