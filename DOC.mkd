@@ -1,0 +1,65 @@
+#在ucore中实现smp过程中遇到的问题
+
+##1.初始段机制的不同（ucore与xv6）
+
+在ucore中在程序初始中使用的是段机制，在进入kern_init之后依然没有开启页机制，并且在经过bootasm.S和entry.S之后，进入kern_init函数时，虚拟地址与物理地址的转换为：虚拟地址-KERNBASE=物理地址。直到pmm_init函数调用后才开启了页机制，同时将段的gdt重新设定加载，使得段中的基地址变为0.
+
+而在xv6中，在启动时，在进入entry.S以后直接开启了一个扩展4MB的页机制，相关实现代码在entry.S中，并段一开始就是基地址为0，页目录中的项有两项，如下所示，在开启这个页表以后，能够使得虚拟地址0-4MB映射到0-4MB和KERNBASE+4MB映射到0-4MB，从而使得链接地址在高地址时依然可以正常进入并完成之后的初始化等内容。
+
+~~~c
+// Use PTE_PS in page directory entry to enable 4Mbyte pages.
+__attribute__((__aligned__(PGSIZE)))
+pde_t entrypgdir[NPDENTRIES] = { 
+  // Map VA's [0, 4MB) to PA's [0, 4MB)
+  [0] = (0) | PTE_P | PTE_W | PTE_PS,
+  // Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)
+  [KERNBASE>>PDXSHIFT] = (0) | PTE_P | PTE_W | PTE_PS,
+};
+~~~
+
+！！这里需要注意的是ucore中段机制中最后加载的gdt表是在pmm_init的函数中的gdt_init实现的，而在xv6中是在seginit中实现的，如果要在初始时改变段机制，需要在gdt_init中相应的修改来实现。
+
+
+##2.页表映射的不同
+
+在ucore中映射的关系主要是以下函数来实现页表的映射关系，同时在之后的gdt_init中将相应段的gdt内容完成了初始化，又变为了基地址为0.我们可以看出这里是将虚拟地址KERNBASE-KERNBASE+KMEMSIZE映射到物理地址0-KMEMSEZE。
+
+boot_map_segment(boot_pgdir, KERNBASE, KMEMSIZE, 0, PTE_W);
+
+而在xv6的页表中主要分布如下：
+
+~~~c
+static struct kmap {
+  void *virt;
+  uint phys_start;
+  uint phys_end;
+  int perm;
+} kmap[] = {
+ { (void*)KERNBASE, 0,             EXTMEM,    PTE_W}, // I/O space
+ { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},     // kern text+rodata
+ { (void*)data,     V2P(data),     PHYSTOP,   PTE_W}, // kern data+memory
+ { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
+};
+
+~~~
+
+由上可以看出与ucore的最大区别在于它增加了一部分的映射关系，即将虚拟地址DEVSPACE（0xfe000000）映射到物理地址DEVSPACE，此部分的内容与smp有所相关，所以在ucore中的建立页表映射时需要将本部分内容做相应的修改实现，这里是我在ucore_smp的pmm.c中进行的仿照的映射关系：
+
+~~~c
+static struct kmap {
+|       void *virt;
+|       uint phys_start;
+|       uint phys_end;
+|       int perm;
+} kmap[] = { 
+   { (void *)KERNBASE, 0, KMEMSIZE,PTE_W},
+   { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
+};
+
+~~~
+
+只有在建立好映射关系之后，才会在访问lapic等smp相关的地址时正确访问，得到正确的内容为之后smp启动做好信息收集
+
+##3.seginit的实现意义
+
+在初始的情况中，通过在ucore中直接加入seginit来实现对应xv6的内容，最后发现出现了问题，主要原因在于对两个
