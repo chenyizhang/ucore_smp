@@ -27,10 +27,14 @@ static void mpmain(void)  __attribute__((noreturn));
 
 void seginit(void);
 
+void consoleinit(void);
+
+
 int
 kern_init(void) {
     extern char edata[], end[];
     memset(edata, 0, end - edata);
+
 
     cons_init();                // init the console
 
@@ -53,6 +57,12 @@ kern_init(void) {
     ioapicinit();    // another interrupt controller  xv6
     //startothers();
 
+    //consoleinit();   // I/O devices & their interrupts
+
+    kbd_init();
+    //uartinit();      // serial port
+
+
     vmm_init();                 // init virtual memory management
     sched_init();               // init scheduler
     proc_init();                // init process table
@@ -61,7 +71,6 @@ kern_init(void) {
     swap_init();                // init swap
     fs_init();                  // init fs 
 
-    //startothers();   // start other processorsi
     //mpmain();
     clock_init();               // init clock interrupt
     intr_enable();              // enable irq interrupt
@@ -94,6 +103,20 @@ switchkvm(void)
 }
 
 
+void
+consoleinit(void)
+{
+//	initlock(&cons.lock, "console");
+//	initlock(&input.lock, "input");
+
+//	devsw[CONSOLE].write = consolewrite;
+//	devsw[CONSOLE].read = consoleread;
+//	cons.locking = 1;
+
+	//kbd_intr();
+	pic_enable(IRQ_KBD);
+	ioapicenable(IRQ_KBD, 0);
+}
 
 // Other CPUs jump here from entryother.S.
 static void

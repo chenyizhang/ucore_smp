@@ -65,7 +65,9 @@ idt_init(void) {
         SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
     }
     SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+    
     lidt(&idt_pd);
+    cprintf("idt_pd addr%p\n",&idt_pd);
 }
 
 static const char *
@@ -195,7 +197,6 @@ extern struct mm_struct *check_mm_struct;
 static void
 trap_dispatch(struct trapframe *tf) {
     char c;
-
     int ret=0;
 
     switch (tf->tf_trapno) {
@@ -241,10 +242,10 @@ trap_dispatch(struct trapframe *tf) {
          *    Every tick, you should update the system time, iterate the timers, and trigger the timers which are end to call scheduler.
          *    You can use one funcitons to finish all these things.
          */
-        ticks ++;
+        ticks++;
         assert(current != NULL);
         run_timer_list();
-	//lapiceoi();
+	lapiceoi();
         break;
     case IRQ_OFFSET + IRQ_COM1:
         //c = cons_getc();
@@ -257,7 +258,7 @@ trap_dispatch(struct trapframe *tf) {
           extern void dev_stdin_write(char c);
           dev_stdin_write(c);
         }
-	//lapiceoi();
+	lapiceoi();
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
@@ -272,7 +273,7 @@ trap_dispatch(struct trapframe *tf) {
     case IRQ_OFFSET + IRQ_SPURIOUS:    //xv6
 	cprintf("cpu%d: spurious interrupt at %x:%x\n",
 		cpu->id, tf->tf_cs, tf->tf_eip);
-	//lapiceoi();
+	lapiceoi();
 	break;
     
     default:

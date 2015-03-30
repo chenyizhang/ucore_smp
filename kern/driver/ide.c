@@ -6,6 +6,7 @@
 #include <ide.h>
 #include <x86.h>
 #include <assert.h>
+#include <mp.h>
 
 #define ISA_DATA                0x00
 #define ISA_ERROR               0x01
@@ -139,6 +140,10 @@ ide_init(void) {
     // enable ide interrupt
     pic_enable(IRQ_IDE1);
     pic_enable(IRQ_IDE2);
+    ioapicenable(IRQ_IDE1, ncpu - 1);
+    ioapicenable(IRQ_IDE2, ncpu - 1);
+//    ioapicenable(IRQ_IDE1, 0);
+//    ioapicenable(IRQ_IDE2, 0);
 }
 
 bool

@@ -45,5 +45,6 @@ clock_init(void) {
 
     cprintf("++ setup timer interrupts\n");
     pic_enable(IRQ_TIMER);
+    ioapicenable(IRQ_TIMER,0);
 }
 

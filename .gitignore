@@ -5,3 +5,4 @@ a.log
 *.[bB]
 *.asm
 /obj
+entryother
