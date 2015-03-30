@@ -46,12 +46,8 @@ kern_init(void) {
     mpinit();    // collect info about this machine
     lapicinit();
 
-    //seginit();
-    
     idt_init();                 // init interrupt descriptor table
     cprintf("\ncpu%d: starting ucore\n\n", cpu->id);
-
-    //ioapicinit();    // another interrupt controller  xv6
 
     pic_init();                 // init interrupt controller
     ioapicinit();    // another interrupt controller  xv6
