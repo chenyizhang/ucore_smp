@@ -183,7 +183,6 @@ lapicstartap(uchar apicid, uint addr)
   lapicw(ICRLO, INIT | LEVEL);
   microdelay(100);    // should be 10ms, but too slow in Bochs!
 
-  cprintf("123123\n");
   // Send startup IPI (twice!) to enter code.
   // Regular hardware is supposed to only accept a STARTUP
   // when it is in the halted state due to an INIT.  So the second

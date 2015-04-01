@@ -24,7 +24,7 @@ struct cpu {
 
 	// Cpu-local storage variables; see below
 	struct cpu *cpu;
-	struct proc *proc;           // The currently-running process.
+	struct proc_struct *proc;           // The currently-running process.
 };
 
 extern struct cpu cpus[NCPU];
@@ -41,7 +41,7 @@ extern int ncpu;
 // in thread libraries such as Linux pthreads.
 
 extern struct cpu *cpu asm("%gs:0");       // &cpus[cpunum()]
-extern struct proc *proc asm("%gs:4");     // cpus[cpunum()].proc
+extern struct proc_struct *proc asm("%gs:4");     // cpus[cpunum()].proc
 
 
 

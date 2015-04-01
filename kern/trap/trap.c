@@ -67,7 +67,6 @@ idt_init(void) {
     SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
     
     lidt(&idt_pd);
-    cprintf("idt_pd addr%p\n",&idt_pd);
 }
 
 static const char *

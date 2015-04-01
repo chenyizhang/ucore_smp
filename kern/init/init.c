@@ -80,9 +80,8 @@ kern_init(void) {
     //lab1_switch_test();
     cprintf("start other cups\n");    
     startothers();   // start other processorsi
-    cprintf("after startothers");
+    cprintf("after startothers\n");
     cpu_idle();                 // run idle process
-    //startothers();   // start other processorsi
 }
 
 void
@@ -122,7 +121,6 @@ consoleinit(void)
 static void
 mpenter(void)
 {
-	cprintf("123dfs\n");
 	idt_init();
 	//pmm_init2();
 	switchkvm();
@@ -139,6 +137,7 @@ mpmain(void)
 	cprintf("cpu%d: starting\n", cpu->id);
 	idt_init();       // load idt register
 	xchg(&cpu->started, 1); // tell startothers() we're up
+	
 	//scheduler();     // start running processes
 	//cpu_idle();
 	while(1);
@@ -167,6 +166,8 @@ loadgs_xv6(ushort v)
 
 
 
+static struct taskstate ts = {0};
+
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
 void
@@ -174,28 +175,31 @@ seginit(void)
 {
 	struct cpu *c; 
 
+
+	load_esp0((uintptr_t)bootstacktop);
+	ts.ts_ss0 = KERNEL_DS;
 	// Map "logical" addresses to virtual addresses using identity map.
 	// Cannot share a CODE descriptor for both kernel and user
 	// because it would have to have DPL_USR, but the CPU forbids
 	// an interrupt from CPL=0 to DPL=3.
 	c = &cpus[cpunum()];
-	//c = &cpus[1];
-	cprintf("cpu addr 123%lx",c);
+	
 	c->gdt[SEG_KTEXT] = SEG(STA_X|STA_R, 0, 0xffffffff, 0); 
 	c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0); 
 	c->gdt[SEG_UTEXT] = SEG(STA_X|STA_R, 0, 0xffffffff, DPL_USER);
 	c->gdt[SEG_UDATA] = SEG(STA_W, 0, 0xffffffff, DPL_USER);
 
+	c->gdt[SEG_TSS] = SEGTSS(STS_T32A, (uintptr_t)&ts, sizeof(ts), DPL_KERNEL);
+
 	// Map cpu, and curproc
 	c->gdt[SEG_KCPU] = SEG(STA_W, (&c->cpu), 8, 0); 
         cprintf("cpu addr %lx\n",&c->cpu);
 	lgdt_xv6(c->gdt, sizeof(c->gdt));
-	cprintf("dfsd fd\n");
 	loadgs_xv6(SEG_KCPU << 3); 
 
 	// Initialize cpu-local storage.
 	cpu = c;
-	proc = 0;
+	//proc = 0;
 }
 __attribute__((__aligned__(PGSIZE)))
 pde_t entrypgdir[1024] = {
@@ -233,7 +237,6 @@ startothers(void)
 		
 		*(void**)(code-4) = stack + KSTACKSIZE;
 		*(void**)(code-8) = mpenter;
-		cprintf("mpenter addr %lx\n",mpenter);
 		*(int**)(code-12) =  (void *)v2p(entrypgdir);
 		//cprintf("boot_pgdir = %p\n",code-12);
 		lapicstartap(c->id, v2p(code));
